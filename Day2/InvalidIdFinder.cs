@@ -1,4 +1,6 @@
-﻿namespace Day2;
+﻿using System.Text;
+
+namespace Day2;
 
 public class InvalidIdFinder
 {
@@ -59,11 +61,55 @@ public class InvalidIdFinder
             Console.WriteLine(range.ToString());
         }
 
-        var result = subRanges.Sum(r => r.StartIndex);
+        var result = subRanges.SelectMany(r => SplitBasedOnRepeatingDigits(r)).Distinct();
 
-        Console.WriteLine(result);
+        foreach (var res in result)
+            Console.WriteLine(res); 
 
-        return result;
+        Console.WriteLine(result.Sum());
+
+        return result.Sum(); 
+    }
+
+    // this should work for second quesiton...
+    private static IEnumerable<long> SplitBasedOnRepeatingDigits(Range range)
+    {
+        if (range.NumberOfDigits <= 1)
+            yield break; 
+        
+        
+        var startString = range.StartIndex.ToString().Substring(0, range.NumberOfDigits.Value / 2);
+        var endString = range.EndIndex.ToString().Substring(0, range.NumberOfDigits.Value / 2);
+
+        var start = int.Parse(startString);
+        var end = int.Parse(endString);
+
+        for (int i = start; i <= end; i++) // we just divide by first half
+        {
+            var currentString = i.ToString(); 
+
+            for (int j = 1; j <= range.NumberOfDigits / 2; j++)
+            {
+                if (range.NumberOfDigits % j != 0)
+                    continue; 
+
+                var numberOfRepeats = range.NumberOfDigits / j;
+
+                var builder = new StringBuilder();
+
+                for (int k = 0; k < numberOfRepeats; k++)
+                {
+                    builder.Append(currentString.Substring(0, j));
+                }
+
+                var potentialOption = long.Parse(builder.ToString());
+
+                if (potentialOption >= range.StartIndex && potentialOption <= range.EndIndex)
+                    yield return potentialOption;
+            }
+            
+            
+        }
     }
 }
 
