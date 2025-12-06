@@ -65,11 +65,11 @@ public class MathProblemSolver
                 var pow = 0; 
                 for (int h = height - 1; h >= 0; h--)
                 {
-                    if (!int.TryParse(array[h, l].ToString(), out var dig))
+                    if (!char.IsDigit(array[h, l]))
                     {
                         continue; 
                     }
-                    lineNum += dig * (long)Math.Pow(10, pow++); 
+                    lineNum += (array[h, l] - '0') * (long)Math.Pow(10, pow++); 
                 }
 
                 if (lineNum == 0)
