@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace Day8;
+﻿namespace Day8;
 
 public class JunctionBoxDistanceFinder
 {
@@ -148,9 +146,7 @@ public record JunctionBox(long X, long Y, long Z)
     }
 
     public HashSet<JunctionBox> Distances = new();
-    private HashSet<JunctionBox> _grouped = new();
-
-    public HashSet<JunctionBox> Groups => _grouped;
+    public HashSet<JunctionBox> Groups { get; set; } = new();
 
     public void Group(JunctionBox b, bool propagateToSubGroups = true)
     {
@@ -180,9 +176,7 @@ public record JunctionBox(long X, long Y, long Z)
         Groups.Add(b);
     }
 
-    public bool IsGrouped => _grouped.Any();
-    public int GroupCount => _grouped.Count();
-    public bool IsGroupedWith(JunctionBox b) => _grouped.Contains(b);
-
+    public bool IsGrouped => Groups.Any();
+    public int GroupCount => Groups.Count();
     public override string ToString() => $"{X}-{Y}-{Z}-{GroupCount}";
 }
