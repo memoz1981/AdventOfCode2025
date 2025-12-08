@@ -128,7 +128,7 @@ public class JunctionBoxDistanceFinder
 
             var countAfter = Math.Max(distance.from.GroupCount, distance.to.GroupCount);
 
-            if (countBefore == junctionBoxes.Count - 2 && countAfter == junctionBoxes.Count - 1)
+            if (countBefore <= junctionBoxes.Count - 2 && countAfter == junctionBoxes.Count - 1)
             {
                 result = distance.from.X * distance.to.X;
                 break;
@@ -152,25 +152,32 @@ public record JunctionBox(long X, long Y, long Z)
 
     public HashSet<JunctionBox> Groups => _grouped;
 
-    public void Group(JunctionBox b)
+    public void Group(JunctionBox b, bool propagateToSubGroups = true)
     {
-        if (_grouped.Contains(b) || this == b)
+        if (Groups.Contains(b) && b.Groups.Contains(this))
+            return; 
+        
+        AddGroup(b);
+        b.AddGroup(this);
+
+        var allGroups = Groups.Concat(b.Groups).Concat([this, b]).Distinct();
+
+        foreach (var gr1 in allGroups)
+        {
+            foreach (var gr2 in allGroups)
+            {
+                gr1.AddGroup(gr2);
+                gr2.AddGroup(gr1);
+            }    
+        }
+    }
+
+    public void AddGroup(JunctionBox b)
+    {
+        if (b == this)
             return;
 
-        _grouped.Add(b);
-        b.Group(this);
-
-        for (int i = 0; i < _grouped.Count; i++)
-        {
-            _grouped.ElementAt(i).Group(b);
-            b.Group(_grouped.ElementAt(i));
-        }
-
-        for (int i = 0; i < b.Groups.Count; i++)
-        {
-            b.Groups.ElementAt(i).Group(this);
-            Group(b.Groups.ElementAt(i));
-        }
+        Groups.Add(b);
     }
 
     public bool IsGrouped => _grouped.Any();
