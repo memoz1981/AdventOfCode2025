@@ -1,4 +1,4 @@
-﻿using static Day9.TileAreaCalculator;
+﻿using System.IO;
 
 namespace Day9;
 
@@ -53,27 +53,194 @@ public class TileAreaCalculator
             tiles.Add(new(nums[0], nums[1]));
         }
 
-        var minMaxByRow = ReturnTilesArray(tiles);
+        var mapX = new Dictionary<long, int>();
+        var mapY = new Dictionary<long, int>();
 
-        long maxArea = 0; 
+        var mapXR = new Dictionary<int, long>();
+        var mapYR = new Dictionary<int, long>();
+
+        var (linesX, linesY) = ReturnTilesArray(tiles, mapX, mapY, mapXR, mapYR);
+
+
+        var tilesNew = new List<Tile>();
+
         foreach (var tile in tiles)
         {
-            foreach (var tile2 in tiles)
-            {
-                if (tile == tile2)
-                    continue;
-                
-                var (isValid, area) = ReturnArea(minMaxByRow, tile, tile2);
+            tilesNew.Add(new Tile(mapX[tile.X], mapY[tile.Y]));
+        }
 
-                if (isValid && area > maxArea)
-                    maxArea = area;
+        //var fileName2 = "3.csv";
+        //var location2 = AppContext.BaseDirectory;
+        //var filePath2 = Path.Combine(location2, fileName2);
+        //using var writer = new StreamWriter(filePath2);
+        //var array = new int[linesX.Count, linesY.Count];
+
+        //for (int x = 1; x < linesX.Count; x++)
+        //{
+        //    var line = linesX[x];
+        //    var min = Math.Min(line.start, line.end);
+        //    var max = Math.Max(line.start, line.end);
+
+        //    for (int y = 0; y < linesY.Count; y++)
+        //    {
+        //        if (y >= min && y <= max)
+        //            array[x, y] = 1;
+        //    }
+        //}
+
+        //for (int y = 1; y < linesY.Count; y++)
+        //{
+        //    var line = linesY[y];
+        //    var min = Math.Min(line.start, line.end);
+        //    var max = Math.Max(line.start, line.end);
+
+        //    for (int x = 0; x < linesX.Count; x++)
+        //    {
+        //        if (x >= min && x <= max)
+        //            array[x, y] = 1;
+        //    }
+        //}
+
+        //for (int x = 0; x < linesX.Count; x++)
+        //{
+        //    writer.WriteLine();
+            
+        //    for (int y = 0; y < linesY.Count; y++)
+        //    {
+        //        if (y != 0)
+        //            writer.Write(",");
+
+        //        if (array[x, y] == 1)
+        //            writer.Write(1);
+        //        else
+        //            writer.Write(0);
+        //    }
+        //}
+
+        long maxArea = 0;
+        Tile a = default;
+        Tile b = default;
+
+        List<(Tile a, Tile b, long result)> areas = new();
+
+
+        foreach (var tile in tilesNew)
+        {
+            foreach (var tile2 in tilesNew)
+            {
+                if (tile == tile2 || tile.X == tile2.X || tile.Y == tile2.Y)
+                    continue;
+
+                var (isValid, area) = ReturnArea(linesX, linesY, tile, tile2, mapXR, mapYR, mapX, mapY);
+
+                if (isValid)
+                {
+                    a = tile;
+                    b = tile2;
+                    areas.Add((a, b, area));
+
+                    if(area > maxArea)
+                        maxArea = area;
+                    
+                    
+                }
+
             }
         }
+
+        areas = areas.OrderByDescending(a => a.result).ToList(); 
 
         return maxArea;
     }
 
-    private static (bool isValid, long area) ReturnArea(Dictionary<long, (long minIndex, long maxIndex)> minMaxByRow, Tile a, Tile b)
+    private static (Dictionary<int, Line> linesX, Dictionary<int, Line> linesY) ReturnTilesArray(List<Tile> tiles, Dictionary<long, int> mapX, 
+        Dictionary<long, int> mapY, Dictionary<int, long> mapXR, Dictionary<int, long> mapYR)
+    {
+        mapX[0] = 0;
+        mapY[0] = 0;
+        mapXR[0] = 0;
+        mapYR[0] = 0;
+
+        var indexX = 1;
+        var indexY = 1;
+
+        foreach (var tile in tiles.OrderBy(t => t.X))
+        {
+            if (mapX.ContainsKey(tile.X))
+                continue; ;
+
+            mapX[tile.X] = indexX;
+            mapXR[indexX] = tile.X;
+            indexX += 1; 
+        }
+
+        foreach (var tile in tiles.OrderBy(t => t.Y))
+        {
+            if (mapY.ContainsKey(tile.Y))
+                continue;
+
+            mapY[tile.Y] = indexY;
+            mapYR[indexY] = tile.Y;
+            indexY += 1;
+        }
+
+        var set = tiles.ToHashSet();
+
+        //var array = new int[indexX, indexY];
+        //var fileName2 = "2.csv";
+        //var location2 = AppContext.BaseDirectory;
+        //var filePath2 = Path.Combine(location2, fileName2);
+        //var writer = new StreamWriter(filePath2);
+
+        var linesX = new Dictionary<int, Line>(); 
+
+        for (int x = 1; x < indexX; x++)
+        {
+            var min = int.MaxValue;
+            var max = -1; 
+            for (int y = 1; y < indexY; y++)
+            {
+                var tileX = mapXR[x];
+                var tileY = mapYR[y];
+
+                if (set.Contains(new Tile(tileX, tileY)))
+                {
+                    min = Math.Min(min, y);
+                    max = Math.Max(max, y); 
+                }
+                    
+            }
+
+            linesX[x] = new(x, min, max); // horizontal line
+        }
+
+        var linesY = new Dictionary<int, Line>();
+        for (int y = 1; y < indexY; y++)
+        {
+            var min = int.MaxValue;
+            var max = -1;
+            for (int x = 1; x < indexX; x++)
+            {
+                var tileX = mapXR[x];
+                var tileY = mapYR[y];
+
+                if (set.Contains(new Tile(tileX, tileY)))
+                {
+                    min = Math.Min(min, x);
+                    max = Math.Max(max, x); 
+                }
+                    
+            }
+
+            linesY[y] = new(y, min, max); // horizontal line
+        }
+
+        return (linesX, linesY);
+    }
+
+    private static (bool isValid, long area) ReturnArea(Dictionary<int, Line> linesX, Dictionary<int, Line> linesY, 
+        Tile a, Tile b, Dictionary<int, long> MapXR, Dictionary<int, long> MapYR,
+        Dictionary<long, int> MapX, Dictionary<long, int> MapY)
     {
         var minX = Math.Min(a.X, b.X);
         var maxX = Math.Max(a.X, b.X);
@@ -81,74 +248,57 @@ public class TileAreaCalculator
         var minY = Math.Min(a.Y, b.Y);
         var maxY = Math.Max(a.Y, b.Y);
 
-        for (long h = minX; h <= maxX; h++)
+        for (long h = minX + 1; h < maxX; h++)
         {
-            var (min, max) = minMaxByRow[(int)h];
-            if (minY < min || maxY > max)
+           
+            var line = linesX[(int)h];
+            var start = Math.Min(line.start, line.end);
+            var end = Math.Max(line.start, line.end);
+
+            var overlaps = (minY > start && minY < end) ||
+                (maxY > start && maxY < end)
+                || (start > minY && start < maxY)
+                || (end > minY && end < maxY);
+            if (overlaps) // if there's a line in between -> one side is not included
+                return (false, -1);
+
+        }
+
+        var lineYsMax = linesY.OrderByDescending(l => l.Value.Length).Take(2).ToList(); 
+
+        for (long l = minY + 1; l < maxY; l++)
+        {
+
+            var line = linesY[(int)l];
+            var start = Math.Min(line.start, line.end);
+            var end = Math.Max(line.start, line.end);
+
+            var overlaps = (start > minX && start < maxX) ||
+                (minX > start && minX < end) ||
+                (maxX > start && maxX < end) || 
+                (end > minX && end < maxX);
+            if (overlaps) // if there's a line in between -> one side is not included
                 return (false, -1);
         }
 
-        return (true, Tile.Area(a, b));
+        var aNew = new Tile(MapXR[(int)a.X], MapYR[(int)a.Y]);
+        var bNew = new Tile(MapXR[(int)b.X], MapYR[(int)b.Y]);
+
+        return (true, Tile.Area(aNew, bNew));
             
     }
-    
-    private static Dictionary<long, (long min, long max)> ReturnTilesArray(List<Tile> tiles)
-    {
-        long height = 0;
-        long length = 0;
-        foreach (var tile in tiles)
-        {
-            height = Math.Max(height, tile.X + 1);
-            length = Math.Max(length, tile.Y + 1);
-        }
 
-        var dictionary = new Dictionary<long, (long min, long max)>(); 
-
-        foreach (var tile in tiles)
-        {
-            long min = int.MaxValue;
-            long max = -1; 
-
-            if (dictionary.TryGetValue(tile.X, out var value))
-            {
-                min = Math.Min(value.min, min);
-                max = Math.Max(value.max, max); 
-            }
-
-            min = Math.Min(tile.Y, min); 
-            max = Math.Max(tile.Y, max);
-
-            dictionary[tile.X] = (min, max); 
-        }
-
-        for (int h = 1; h < height; h++)
-        {
-            long min = int.MaxValue;
-            long max = -1; 
-            if (dictionary.TryGetValue(h - 1, out var previous))
-            {
-                min = previous.min;
-                max = previous.max;
-            }
-
-            if (dictionary.TryGetValue(h, out var current))
-            {
-                min = Math.Min(current.min, min);
-                max = Math.Max(current.max, max); 
-            }
-
-            dictionary[h] = (min, max); 
-        }
-
-        return dictionary; 
-    }
-
-    public record Tile(long X, long Y)
+    public record struct Tile(long X, long Y)
     {
         public static long Area(Tile a, Tile b)
         {
-            return Math.Abs((a.X - b.X + 1) * (a.Y - b.Y + 1)); 
+            return (Math.Abs(a.X - b.X) + 1) * (Math.Abs(a.Y - b.Y) + 1); 
         }
+    }
+
+    public record struct Line(int index, int start, int end) 
+    {
+        public int Length => Math.Abs(end - start + 1);
     }
 
 }
